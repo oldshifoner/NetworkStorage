@@ -8,12 +8,15 @@
 import UIKit
 
 class DownloadableImageView: UIImageView, Downloadable {
+    
+    private var currentDownloadTask: URLSessionDataTask?
+    
     private static let memoryCache = NSCache<NSString, UIImage>()
     private static let diskCacheURL: URL = {
         let paths = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)
         return paths[0]
     }()
-
+    
     public func loadImage(from url: URL, withOptions: [DownloadOptions]) {
         DispatchQueue.global().async {
             var processedImage: UIImage?

@@ -9,7 +9,7 @@ import Foundation
 
 class ImageListViewModel {
     
-    public lazy var imageModels: [ImageModel] = []
+    public var imageModels: [ImageModel] = []
     
     public var updateData: (() -> ())?
     
@@ -31,7 +31,9 @@ class ImageListViewModel {
             imageModels.append(ImageModel(
                 id: id.intValue,
                 url: url as String,
-                name: name as String))
+                name: name as String,
+                isDownloaded: false
+            ))
             }
         }
         updateData?()

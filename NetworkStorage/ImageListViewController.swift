@@ -45,11 +45,13 @@ class ImageListViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        print("34324424234234234234234234")
         getImages()
         setupUI()
         imageListViewModel.updateData = { [weak self] in
             guard let self else {return}
-            DispatchQueue.main.sync {
+            DispatchQueue.main.async {
                 self.collectionView.reloadData()
             }
         }
@@ -58,6 +60,7 @@ class ImageListViewController: UIViewController {
         getAllAssets(from: serverURL, token: token) { result in
             switch result {
             case .success(let assets):
+                
                 self.imageListViewModel.initArrayImageModels(assets: assets)
             case .failure(let error):
                 print("Error fetching assets: \(error.localizedDescription)")
@@ -90,11 +93,17 @@ extension ImageListViewController: UICollectionViewDataSource, UICollectionViewD
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ImageCell.identifier, for: indexPath) as? ImageCell else {
             return UICollectionViewCell()
         }
-        let imageModel = imageListViewModel.imageModels[indexPath.item]
+        let imageModel = imageListViewModel.imageModels[indexPath.row]
         cell.viewModel = imageModel
         cell.layer.cornerRadius = 20
         cell.layer.borderWidth = 1
         cell.layer.borderColor = CGColor.init(red: 255/255, green: 255/255, blue: 255/255, alpha: 1.0)
+//        cell.downloadImage = { [weak self] url in
+//            guard let self else {return}
+//            cell.imageView.loadImage(from: URL(string: self.serverURL + url)!, withOptions: [.resize(cell.bounds.size), .cache(.memory)])
+//        }
+        cell.imageView.loadImage(from: URL(string: serverURL + imageModel.url)!, withOptions: [.resize(cell.bounds.size), .cache(.memory)])
+
         return cell
     }
 }

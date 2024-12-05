@@ -6,55 +6,52 @@
 //
 
 import UIKit
-import Combine
 
 class ImageCell: UICollectionViewCell {
-    
+    private let serverURL = "http://164.90.163.215:1337"
     public var viewModel: ImageModel? {
         didSet{
             updateUI()
         }
     }
     
-    public var downloadableImageView = DownloadableImageView()
+    public var imageView = DownloadableImageView()
+    
+    public var downloadImage: ((String) -> ())?
     
     private func updateUI(){
         guard let viewModel else {return}
-        progressLabel.text = viewModel.name
-        downloadButton.setTitle(viewModel.url, for: .normal)
+//        imageView.loadImage(from: URL(string: serverURL + viewModel.url)!, withOptions: [.resize(contentView.bounds.size), .cache(.memory)])
     }
     
     override func prepareForReuse() {
-        
+        imageView.image = nil
     }
     
     static let identifier = "ImageCell"
-    private var cancellables: Set<AnyCancellable> = []
+    //private var cancellables: Set<AnyCancellable> = []
     
-    private let imageView: UIImageView = {
-        let iv = UIImageView()
-        iv.contentMode = .scaleAspectFit
-        iv.clipsToBounds = true
-        //iv.image = UIImage(named: "photo")
-        iv.backgroundColor = .clear
-        iv.layer.cornerRadius = 20
-        iv.translatesAutoresizingMaskIntoConstraints = false
-        return iv
-    }()
-    
-    private let downloadButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.setTitle("Скачать", for: .normal)
-        button.tintColor = .white
-        button.backgroundColor = .systemBlue
-        button.layer.cornerRadius = 5
+    private lazy var downloadButton: UIButton = {
+        let button = UIButton()
+        let imageView = UIImage(named: "cloud")
+        button.setBackgroundImage(imageView, for: .normal)
+        button.isEnabled = true
+        button.addTarget(self, action: #selector(downloadImage(_:)), for: .touchUpInside)
+        button.translatesAutoresizingMaskIntoConstraints = false
         button.clipsToBounds = true
+        
         return button
     }()
     
+    @objc func downloadImage(_ sender: UIButton) {
+        guard let viewModel = self.viewModel else {return}
+        downloadImage?(viewModel.url)
+        print(viewModel.name)
+    }
+    
     private let progressView: UIProgressView = {
         let progress = UIProgressView(progressViewStyle: .default)
-        progress.progress = 0.0
+        progress.progress = 0.5
         return progress
     }()
     
@@ -77,14 +74,23 @@ class ImageCell: UICollectionViewCell {
     }
     
     private func setupViews() {
+        imageView.frame = contentView.bounds
+        imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
+        imageView.layer.cornerRadius = 20
         contentView.addSubview(imageView)
         contentView.addSubview(downloadButton)
         contentView.addSubview(progressView)
         contentView.addSubview(progressLabel)
         
-        imageView.heightAnchor.constraint(equalToConstant: contentView.frame.height).isActive = true
-        imageView.widthAnchor.constraint(equalToConstant: contentView.frame.width).isActive = true
-        downloadButton.frame = CGRect(x: 10, y: contentView.frame.height / 2 - 15, width: contentView.frame.width - 20, height: 30)
+        downloadButton.heightAnchor.constraint(equalToConstant: 25).isActive = true
+        downloadButton.widthAnchor.constraint(equalToConstant: 40).isActive = true
+        downloadButton.centerXAnchor.constraint(equalTo: contentView.centerXAnchor).isActive = true
+        downloadButton.centerYAnchor.constraint(equalTo: contentView.centerYAnchor).isActive = true
+        
+        //imageView.heightAnchor.constraint(equalToConstant: contentView.frame.height).isActive = true
+        //imageView.widthAnchor.constraint(equalToConstant: contentView.frame.width).isActive = true
+        //downloadButton.frame = CGRect(x: contentView.frame.width / 2, y: contentView.frame.height / 2, width: 72, height: 49)
         progressView.frame = CGRect(x: 10, y: contentView.frame.height - 30, width: contentView.frame.width - 20, height: 10)
         progressLabel.frame = CGRect(x: 10, y: contentView.frame.height - 20, width: contentView.frame.width - 20, height: 20)
     }

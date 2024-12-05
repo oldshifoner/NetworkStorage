@@ -32,8 +32,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "31"
             endingLineNumber = "31"
-            landmarkName = "initArrayImageModels(assets:)"
-            landmarkType = "7">
+            landmarkName = "ImageListViewModel"
+            landmarkType = "3">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -48,8 +48,8 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "26"
             endingLineNumber = "26"
-            landmarkName = "initArrayImageModels(assets:)"
-            landmarkType = "7">
+            landmarkName = "imageModels"
+            landmarkType = "24">
             <Locations>
                <Location
                   uuid = "A960FC80-6CF8-4937-A8B5-8A87E2ED759E - 26cff4e79adac930"
