@@ -5,18 +5,14 @@
 //  Created by Максим Игоревич on 01.12.2024.
 //
 
-import UIKit
-import Combine
-
-class ImageModel: ObservableObject {
-    let id: String
+struct ImageModel {
+    let id: Int
     let url: String
-    @Published var isDownloaded: Bool = false
-    @Published var localImage: UIImage? = nil
-    @Published var progress: Float = 0.0
+    let name: String
     
-    init(id: String, url: String) {
+    init(id: Int, url: String, name: String) {
         self.id = id
         self.url = url
+        self.name = name
     }
 }

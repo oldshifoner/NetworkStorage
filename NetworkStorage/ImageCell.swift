@@ -9,6 +9,25 @@ import UIKit
 import Combine
 
 class ImageCell: UICollectionViewCell {
+    
+    public var viewModel: ImageModel? {
+        didSet{
+            updateUI()
+        }
+    }
+    
+    public var downloadableImageView = DownloadableImageView()
+    
+    private func updateUI(){
+        guard let viewModel else {return}
+        progressLabel.text = viewModel.name
+        downloadButton.setTitle(viewModel.url, for: .normal)
+    }
+    
+    override func prepareForReuse() {
+        
+    }
+    
     static let identifier = "ImageCell"
     private var cancellables: Set<AnyCancellable> = []
     
@@ -16,7 +35,10 @@ class ImageCell: UICollectionViewCell {
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFit
         iv.clipsToBounds = true
-        iv.backgroundColor = .lightGray
+        //iv.image = UIImage(named: "photo")
+        iv.backgroundColor = .clear
+        iv.layer.cornerRadius = 20
+        iv.translatesAutoresizingMaskIntoConstraints = false
         return iv
     }()
     
@@ -60,51 +82,11 @@ class ImageCell: UICollectionViewCell {
         contentView.addSubview(progressView)
         contentView.addSubview(progressLabel)
         
-        imageView.frame = contentView.bounds
+        imageView.heightAnchor.constraint(equalToConstant: contentView.frame.height).isActive = true
+        imageView.widthAnchor.constraint(equalToConstant: contentView.frame.width).isActive = true
         downloadButton.frame = CGRect(x: 10, y: contentView.frame.height / 2 - 15, width: contentView.frame.width - 20, height: 30)
         progressView.frame = CGRect(x: 10, y: contentView.frame.height - 30, width: contentView.frame.width - 20, height: 10)
         progressLabel.frame = CGRect(x: 10, y: contentView.frame.height - 20, width: contentView.frame.width - 20, height: 20)
     }
     
-    func configure(with model: ImageModel, downloadAction: @escaping () -> Void) {
-        cancellables.forEach { $0.cancel() }
-        cancellables.removeAll()
-        
-        if model.isDownloaded {
-            imageView.image = model.localImage
-            downloadButton.isHidden = true
-            progressView.isHidden = true
-            progressLabel.isHidden = true
-        } else {
-            imageView.image = nil
-            downloadButton.isHidden = false
-            progressView.isHidden = false
-            progressLabel.isHidden = false
-            progressView.progress = model.progress
-            progressLabel.text = "\(Int(model.progress * 100))%"
-        }
-        
-        downloadButton.addAction(UIAction(handler: { _ in
-            downloadAction()
-        }), for: .touchUpInside)
-        
-        model.$progress
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] progress in
-                self?.progressView.progress = progress
-                self?.progressLabel.text = "\(Int(progress * 100))%"
-            }
-            .store(in: &cancellables)
-        
-        model.$localImage
-            .compactMap { $0 }
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] image in
-                self?.imageView.image = image
-                self?.downloadButton.isHidden = true
-                self?.progressView.isHidden = true
-                self?.progressLabel.isHidden = true
-            }
-            .store(in: &cancellables)
-    }
 }

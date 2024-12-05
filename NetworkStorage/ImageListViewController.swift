@@ -9,79 +9,99 @@ import UIKit
 import Combine
 
 class ImageListViewController: UIViewController {
-    let serverURL = "http://164.90.163.215:1337"
-    let token = "11c211d104fe7642083a90da69799cf055f1fe1836a211aca77c72e3e069e7fde735be9547f0917e1a1000efcb504e21f039d7ff55bf1afcb9e2dd56e4d6b5ddec3b199d12a2fac122e43b4dcba3fea66fe428e7c2ee9fc4f1deaa615fa5b6a68e2975cd2f99c65a9eda376e5b6a2a3aee1826ca4ce36d645b4f59f60cf5b74a"
+    private let serverURL = "http://164.90.163.215:1337"
+    private let token = "11c211d104fe7642083a90da69799cf055f1fe1836a211aca77c72e3e069e7fde735be9547f0917e1a1000efcb504e21f039d7ff55bf1afcb9e2dd56e4d6b5ddec3b199d12a2fac122e43b4dcba3fea66fe428e7c2ee9fc4f1deaa615fa5b6a68e2975cd2f99c65a9eda376e5b6a2a3aee1826ca4ce36d645b4f59f60cf5b74a"
 
-    private var viewModel = ImageListViewModel()
+    private var imageListViewModel = ImageListViewModel()
     private var cancellables: Set<AnyCancellable> = []
-    private var collectionView: UICollectionView!
+    
+    private lazy var collectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .vertical
+        layout.itemSize = CGSize(width: view.frame.width / 2 - 16, height: view.frame.width / 2 - 16)
+        layout.minimumLineSpacing = 10
+        layout.minimumInteritemSpacing = 10
+        layout.sectionInset = .init(top: 10, left: 10, bottom: 0, right: 10)
+        
+        let collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: layout)
+        collectionView.backgroundColor = .black
+        collectionView.register(ImageCell.self, forCellWithReuseIdentifier: ImageCell.identifier)
+        collectionView.dataSource = self
+        collectionView.delegate = self
+        
+        return collectionView
+    }()
+    private lazy var titleLabel: UILabel = {
+            let label = UILabel()
+            label.textColor = .white
+            label.numberOfLines = 0
+            label.backgroundColor = .clear
+            label.numberOfLines = 0
+            label.textAlignment = NSTextAlignment.center
+            label.font = UIFont.boldSystemFont(ofSize: 16)
+            label.text = "Список изображений"
+            return label
+        }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
-//        setupCollectionView()
-//        bindViewModel()
-//        viewModel.fetchImages()
         getImages()
+        setupUI()
+        imageListViewModel.updateData = { [weak self] in
+            guard let self else {return}
+            DispatchQueue.main.sync {
+                self.collectionView.reloadData()
+            }
+        }
     }
-    func getImages() {
+    private func getImages() {
         getAllAssets(from: serverURL, token: token) { result in
             switch result {
             case .success(let assets):
-                print("Assets: \(assets)")
-                
+                self.imageListViewModel.initArrayImageModels(assets: assets)
             case .failure(let error):
                 print("Error fetching assets: \(error.localizedDescription)")
             }
         }
     }
     
-    private func setupCollectionView() {
-        let layout = UICollectionViewFlowLayout()
-        layout.itemSize = CGSize(width: view.frame.width / 2 - 16, height: view.frame.width / 2 - 16)
-        layout.minimumLineSpacing = 8
-        layout.minimumInteritemSpacing = 8
-        
-        collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: layout)
-        collectionView.backgroundColor = .white
-        collectionView.register(ImageCell.self, forCellWithReuseIdentifier: ImageCell.identifier)
-        collectionView.dataSource = self
-        collectionView.delegate = self
-        
+    private func setupUI() {
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = .black
+        appearance.titleTextAttributes = [.foregroundColor: UIColor.white]
+        appearance.shadowColor = .clear
+        navigationController?.navigationBar.standardAppearance = appearance
+        navigationController?.navigationBar.scrollEdgeAppearance = appearance
+        self.navigationItem.titleView = titleLabel
+        view.backgroundColor = .black
         view.addSubview(collectionView)
     }
 
-    private func bindViewModel() {
-        viewModel.$images
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.collectionView.reloadData()
-            }
-            .store(in: &cancellables)
-    }
 }
 
 extension ImageListViewController: UICollectionViewDataSource, UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return viewModel.images.count
+        return imageListViewModel.imageModels.count
+        
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ImageCell.identifier, for: indexPath) as? ImageCell else {
             return UICollectionViewCell()
         }
-
-        let imageModel = viewModel.images[indexPath.item]
-        cell.configure(with: imageModel) { [weak self] in
-            self?.viewModel.downloadImage(for: imageModel)
-        }
-
+        let imageModel = imageListViewModel.imageModels[indexPath.item]
+        cell.viewModel = imageModel
+        cell.layer.cornerRadius = 20
+        cell.layer.borderWidth = 1
+        cell.layer.borderColor = CGColor.init(red: 255/255, green: 255/255, blue: 255/255, alpha: 1.0)
         return cell
     }
 }
 
 extension ImageListViewController {
     
-    func uploadImage(to url: String, image: UIImage, token: String, completion: @escaping (Result<[String: Any], Error>) -> Void) {
+    private func uploadImage(to url: String, image: UIImage, token: String, completion: @escaping (Result<[String: Any], Error>) -> Void) {
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
             completion(.failure(NSError(domain: "ImageConversionError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Unable to convert image to data"])))
             return
@@ -133,12 +153,12 @@ extension ImageListViewController {
         task.resume()
     }
     
-    func getAllAssets(from url: String, token: String, completion: @escaping (Result<[[String: Any]], Error>) -> Void) {
+    private func getAllAssets(from url: String, token: String, completion: @escaping (Result<[[String: Any]], Error>) -> Void) {
         guard let assetsURL = URL(string: "\(url)/api/upload/files") else {
             completion(.failure(NSError(domain: "InvalidURLError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
             return
         }
-
+        
         var request = URLRequest(url: assetsURL)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
