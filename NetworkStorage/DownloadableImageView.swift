@@ -18,25 +18,31 @@ class DownloadableImageView: UIImageView, Downloadable {
     }()
     
     public func loadImage(from url: URL, withOptions: [DownloadOptions]) {
+        
+        currentDownloadTask?.cancel()
+        
         DispatchQueue.global().async {
-            var processedImage: UIImage?
-            
+
             if let cachedImage = self.getCachedImage(for: url, options: withOptions) {
-                processedImage = cachedImage
-            } else {
-                guard let data = try? Data(contentsOf: url),
+                DispatchQueue.main.async {
+                    self.image = cachedImage
+                }
+                return
+            }
+            let session = URLSession(configuration: .default)
+            self.currentDownloadTask = session.dataTask(with: url) { [weak self] data, response, error in
+                guard let self = self, let data = data, error == nil,
                       var image = UIImage(data: data) else {
                     return
                 }
-                for option in withOptions {
-                    image = self.performOption(image, option: option, for: url)
-                }
-                processedImage = image
+            for option in withOptions {
+                image = self.performOption(image, option: option, for: url)
             }
-            
             DispatchQueue.main.async {
-                self.image = processedImage
-            }
+                    self.image = image
+                }
+        }
+            self.currentDownloadTask?.resume()
         }
     }
     
@@ -86,6 +92,11 @@ class DownloadableImageView: UIImageView, Downloadable {
 
     private func cacheKey(for url: URL) -> String {
         return "\(url.absoluteString)"
+    }
+    
+    public func cancelDownload() {
+        currentDownloadTask?.cancel()
+        currentDownloadTask = nil
     }
 }
 

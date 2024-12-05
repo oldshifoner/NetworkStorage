@@ -8,7 +8,7 @@
 import UIKit
 
 class ImageCell: UICollectionViewCell {
-    private let serverURL = "http://164.90.163.215:1337"
+   
     public var viewModel: ImageModel? {
         didSet{
             updateUI()
@@ -26,6 +26,7 @@ class ImageCell: UICollectionViewCell {
     
     override func prepareForReuse() {
         imageView.image = nil
+        imageView.cancelDownload()
     }
     
     static let identifier = "ImageCell"
