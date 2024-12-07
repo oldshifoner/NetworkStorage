@@ -76,8 +76,8 @@ class ImageListViewController: UIViewController {
             guard let self else {return}
             DispatchQueue.main.async {
                 //self.collectionView.reloadData()
-//                let indexPath = IndexPath(item: index, section: 0)
-//                self.collectionView.reloadItems(at: [indexPath])
+                let indexPath = IndexPath(item: index, section: 0)
+                self.collectionView.reloadItems(at: [indexPath])
             }
             
         }

@@ -24,8 +24,13 @@ class ImageCell: UICollectionViewCell {
     
     private func updateUI(){
         guard let viewModel else {return}
+        progressLabel.isHidden = true
+        progressView.isHidden = true
         if viewModel.isDownloaded {
             print("\(viewModel.id)" + " \(viewModel.isDownloaded)")
+            downloadButton.isHidden = true
+            progressLabel.isHidden = true
+            progressView.isHidden = true
             var image: UIImage?
             DispatchQueue.global().async {
                 //image = self.imageView.getCachedImage(for: URL(string: viewModel.url)!, options: [.cache(.disk)])
@@ -35,24 +40,18 @@ class ImageCell: UICollectionViewCell {
                 //self.contentView.addSubview(self.imageTest)
                 // НЕ НАХОДИТ ЭЛЕМЕНТ В КЭШЕ ВОЗМОЖНО по причине релоада DownloadableImageView
             }
-            imageView.onDownloadProgress = { progress in
-                print("Download progress: \(progress)%")
-            }
+            
         }
     }
-    
-    private lazy var imageTest: UIImageView = {
-            let imageView = UIImageView()
-            imageView.contentMode = .scaleAspectFill
-            imageView.clipsToBounds = true
-            imageView.backgroundColor = .clear
-            imageView.translatesAutoresizingMaskIntoConstraints = false
-            return imageView
-        }()
     
     override func prepareForReuse() {
         imageView.image = nil
         imageView.cancelDownload()
+        progressView.progress = 0.0
+        progressLabel.text = "0%"
+        progressLabel.isHidden = true
+        progressView.isHidden = true
+        downloadButton.isHidden = false
     }
     
     private lazy var downloadButton: UIButton = {
@@ -70,12 +69,16 @@ class ImageCell: UICollectionViewCell {
     @objc func downloadImage(_ sender: UIButton) {
         guard let viewModel = self.viewModel else {return}
         downloadImageClouser?(viewModel.url)
+        downloadButton.isHidden = true
+        progressLabel.isHidden = false
+        progressView.isHidden = false
         print(viewModel.name)
     }
     
     private let progressView: UIProgressView = {
         let progress = UIProgressView(progressViewStyle: .default)
-        progress.progress = 0.5
+        progress.progressTintColor = .red
+        progress.progress = 0.0
         return progress
     }()
     
@@ -83,7 +86,7 @@ class ImageCell: UICollectionViewCell {
         let label = UILabel()
         label.textAlignment = .center
         label.font = UIFont.systemFont(ofSize: 12)
-        label.textColor = .darkGray
+        label.textColor = .white
         label.text = "0%"
         return label
     }()
@@ -91,6 +94,12 @@ class ImageCell: UICollectionViewCell {
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupViews()
+        
+        imageView.onDownloadProgress = { progress in
+            self.progressView.progress = progress
+            let formattedProgress = String(format: "%.0f", progress * 100)
+            self.progressLabel.text = formattedProgress + "%"
+        }
         
         imageView.imageLoadedPublisher
             .receive(on: DispatchQueue.main) // Обрабатываем события на главном потоке
@@ -106,8 +115,9 @@ class ImageCell: UICollectionViewCell {
                 },
                 receiveValue: { image in
                     print("Image downloaded successfully!")
-                    self.imageView.image = image
+                    //self.imageView.image = image
                     guard let viewModel = self.viewModel else {return}
+                    
                     viewModel.isDownloadedEvent?(viewModel.id)
                 }
                 
@@ -139,8 +149,8 @@ class ImageCell: UICollectionViewCell {
         //imageView.heightAnchor.constraint(equalToConstant: contentView.frame.height).isActive = true
         //imageView.widthAnchor.constraint(equalToConstant: contentView.frame.width).isActive = true
         //downloadButton.frame = CGRect(x: contentView.frame.width / 2, y: contentView.frame.height / 2, width: 72, height: 49)
-        progressView.frame = CGRect(x: 10, y: contentView.frame.height - 30, width: contentView.frame.width - 20, height: 10)
-        progressLabel.frame = CGRect(x: 10, y: contentView.frame.height - 20, width: contentView.frame.width - 20, height: 20)
+        progressView.frame = CGRect(x: 10, y: contentView.frame.height - 90, width: contentView.frame.width - 20, height: 10)
+        progressLabel.frame = CGRect(x: 10, y: contentView.frame.height - 80, width: contentView.frame.width - 20, height: 20)
     }
     
 }
