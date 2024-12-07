@@ -102,7 +102,7 @@ class ImageCell: UICollectionViewCell {
         }
         
         imageView.imageLoadedPublisher
-            .receive(on: DispatchQueue.main) // Обрабатываем события на главном потоке
+            .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { completion in
                     switch completion {

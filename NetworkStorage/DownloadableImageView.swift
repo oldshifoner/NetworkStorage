@@ -39,7 +39,7 @@ class DownloadableImageView: UIImageView, Downloadable {
         currentOptions = options
 
         DispatchQueue.global().async {
-            // Проверяем кэш
+            
             if let cachedImage = self.getCachedImage(for: url, options: options) {
                 DispatchQueue.main.async {
                     self.image = cachedImage
@@ -47,9 +47,9 @@ class DownloadableImageView: UIImageView, Downloadable {
                 return
             }
 
-            // Создаём URLSession с делегатом
+            
             let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
-            self.currentDownloadTask = session.dataTask(with: url) // Создаём задачу без замыкания
+            self.currentDownloadTask = session.dataTask(with: url)
             self.currentDownloadTask?.resume()
         }
     }
@@ -116,21 +116,21 @@ extension DownloadableImageView: URLSessionDataDelegate {
     
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
             print("Response received")
-            totalDataCount = response.expectedContentLength // Общий размер данных
+            totalDataCount = response.expectedContentLength
             receivedDataCount = 0
-            downloadedData = Data()                         // Инициализируем хранилище данных
+            downloadedData = Data()
             completionHandler(.allow)
         }
         
         func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
             print("Receiving data")
             receivedDataCount += Int64(data.count)
-            downloadedData.append(data)                    // Добавляем полученные данные
+            downloadedData.append(data)
             
             if totalDataCount > 0 {
                 let progress = Float(receivedDataCount) / Float(totalDataCount)
                 DispatchQueue.main.async {
-                    self.onDownloadProgress?(progress) // Прогресс в процентах
+                    self.onDownloadProgress?(progress)
                 }
             }
         }
