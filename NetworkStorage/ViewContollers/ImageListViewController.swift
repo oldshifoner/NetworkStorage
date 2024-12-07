@@ -9,8 +9,14 @@ import UIKit
 import Combine
 
 class ImageListViewController: UIViewController {
+    
     private let serverURL = "http://164.90.163.215:1337"
     private let token = "11c211d104fe7642083a90da69799cf055f1fe1836a211aca77c72e3e069e7fde735be9547f0917e1a1000efcb504e21f039d7ff55bf1afcb9e2dd56e4d6b5ddec3b199d12a2fac122e43b4dcba3fea66fe428e7c2ee9fc4f1deaa615fa5b6a68e2975cd2f99c65a9eda376e5b6a2a3aee1826ca4ce36d645b4f59f60cf5b74a"
+    public static let memoryCache = NSCache<NSString, UIImage>()
+    public static let diskCacheURL: URL = {
+        let paths = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)
+        return paths[0]
+    }()
 
     private var imageListViewModel = ImageListViewModel()
     private var cancellables: Set<AnyCancellable> = []
@@ -25,7 +31,7 @@ class ImageListViewController: UIViewController {
         
         let collectionView = UICollectionView(frame: view.bounds, collectionViewLayout: layout)
         collectionView.backgroundColor = .black
-        collectionView.register(ImageCell.self, forCellWithReuseIdentifier: ImageCell.identifier)
+        collectionView.register(ImageCell.self, forCellWithReuseIdentifier: String(describing: ImageCell.self))
         collectionView.dataSource = self
         collectionView.delegate = self
         
@@ -41,12 +47,23 @@ class ImageListViewController: UIViewController {
             label.font = UIFont.boldSystemFont(ofSize: 16)
             label.text = "Список изображений"
             return label
-        }()
+    }()
+    private lazy var nextUploadScreenButton: UIButton = {
+            let button = UIButton()
+            let imageView = UIImageView(image: UIImage(named: "nextScreen"))
+            button.setImage(imageView.image, for: .normal)
+            button.backgroundColor = .clear
+            button.isEnabled = true
+            button.translatesAutoresizingMaskIntoConstraints = false
+            button.addTarget(self, action: #selector(nextUploadScreenButtonTapped(_:)), for: .touchUpInside)
+            return button
+    }()
+    @objc func nextUploadScreenButtonTapped(_ sender: UIButton) {
+        self.navigationController?.pushViewController(ViewController(), animated: true)
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        print("34324424234234234234234234")
         getImages()
         setupUI()
         imageListViewModel.updateData = { [weak self] in
@@ -55,13 +72,21 @@ class ImageListViewController: UIViewController {
                 self.collectionView.reloadData()
             }
         }
+        imageListViewModel.updateCellData = { [weak self] index in
+            guard let self else {return}
+            DispatchQueue.main.async {
+                //self.collectionView.reloadData()
+//                let indexPath = IndexPath(item: index, section: 0)
+//                self.collectionView.reloadItems(at: [indexPath])
+            }
+            
+        }
     }
     private func getImages() {
         getAllAssets(from: serverURL, token: token) { result in
             switch result {
             case .success(let assets):
-                
-                self.imageListViewModel.initArrayImageModels(assets: assets)
+                self.imageListViewModel.initArrayImageModels(assets: assets, serverURL: self.serverURL)
             case .failure(let error):
                 print("Error fetching assets: \(error.localizedDescription)")
             }
@@ -77,6 +102,11 @@ class ImageListViewController: UIViewController {
         navigationController?.navigationBar.standardAppearance = appearance
         navigationController?.navigationBar.scrollEdgeAppearance = appearance
         self.navigationItem.titleView = titleLabel
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(customView: nextUploadScreenButton)
+        NSLayoutConstraint.activate([
+            nextUploadScreenButton.heightAnchor.constraint(equalToConstant: 24),
+            nextUploadScreenButton.widthAnchor.constraint(equalToConstant: 24),
+        ])
         view.backgroundColor = .black
         view.addSubview(collectionView)
     }
@@ -90,20 +120,21 @@ extension ImageListViewController: UICollectionViewDataSource, UICollectionViewD
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ImageCell.identifier, for: indexPath) as? ImageCell else {
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: String(describing: ImageCell.self), for: indexPath) as? ImageCell else {
             return UICollectionViewCell()
         }
+        print("reloadCurrentCell")
         let imageModel = imageListViewModel.imageModels[indexPath.row]
         cell.viewModel = imageModel
         cell.layer.cornerRadius = 20
         cell.layer.borderWidth = 1
         cell.layer.borderColor = CGColor.init(red: 255/255, green: 255/255, blue: 255/255, alpha: 1.0)
-//        cell.downloadImage = { [weak self] url in
-//            guard let self else {return}
-//            cell.imageView.loadImage(from: URL(string: self.serverURL + url)!, withOptions: [.resize(cell.bounds.size), .cache(.memory)])
-//        }
-        cell.imageView.loadImage(from: URL(string: serverURL + imageModel.url)!, withOptions: [.resize(cell.bounds.size), .cache(.memory)])
-
+        cell.downloadImageClouser = { url in
+            cell.imageView.loadImage(from: URL(string: url)!, withOptions: [.resize(cell.bounds.size), .cache(.memory)])
+        }
+        if imageModel.isDownloaded {
+            cell.imageView.loadImage(from: URL(string: imageModel.url)!, withOptions: [.resize(cell.bounds.size), .cache(.memory)])
+        }
         return cell
     }
 }

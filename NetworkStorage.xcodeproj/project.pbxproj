@@ -49,6 +49,24 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		946B32F62D044E4700B8C8C0 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				948D80C32CFC9F2500EC9CE2 /* ImageListViewModel.swift */,
+				948D80C12CFC9F0000EC9CE2 /* ImageModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		946B32F72D044E8100B8C8C0 /* ViewContollers */ = {
+			isa = PBXGroup;
+			children = (
+				948D80C52CFC9F6700EC9CE2 /* ImageListViewController.swift */,
+				94785E2D2CFC220F00180090 /* ViewController.swift */,
+			);
+			path = ViewContollers;
+			sourceTree = "<group>";
+		};
 		94785E1D2CFC220E00180090 = {
 			isa = PBXGroup;
 			children = (
@@ -68,19 +86,17 @@
 		94785E282CFC220F00180090 /* NetworkStorage */ = {
 			isa = PBXGroup;
 			children = (
-				94785E292CFC220F00180090 /* AppDelegate.swift */,
+				946B32F72D044E8100B8C8C0 /* ViewContollers */,
+				946B32F62D044E4700B8C8C0 /* ViewModels */,
 				94785E2B2CFC220F00180090 /* SceneDelegate.swift */,
-				94785E2D2CFC220F00180090 /* ViewController.swift */,
+				94785E292CFC220F00180090 /* AppDelegate.swift */,
 				94785E2F2CFC220F00180090 /* Main.storyboard */,
 				94785E322CFC221200180090 /* Assets.xcassets */,
 				94785E342CFC221200180090 /* LaunchScreen.storyboard */,
 				94785E372CFC221200180090 /* Info.plist */,
-				948D80C12CFC9F0000EC9CE2 /* ImageModel.swift */,
-				948D80C32CFC9F2500EC9CE2 /* ImageListViewModel.swift */,
-				948D80C52CFC9F6700EC9CE2 /* ImageListViewController.swift */,
 				948D80C72CFC9F9400EC9CE2 /* ImageCell.swift */,
-				946B32F02D01E18400B8C8C0 /* DownloadableImageView.swift */,
 				946B32F42D01E2A200B8C8C0 /* ExtensionUIImage.swift */,
+				946B32F02D01E18400B8C8C0 /* DownloadableImageView.swift */,
 			);
 			path = NetworkStorage;
 			sourceTree = "<group>";

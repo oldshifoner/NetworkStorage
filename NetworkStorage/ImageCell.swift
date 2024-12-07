@@ -6,9 +6,12 @@
 //
 
 import UIKit
+import Combine
 
 class ImageCell: UICollectionViewCell {
    
+    private var cancellables = Set<AnyCancellable>()
+    
     public var viewModel: ImageModel? {
         didSet{
             updateUI()
@@ -17,20 +20,40 @@ class ImageCell: UICollectionViewCell {
     
     public var imageView = DownloadableImageView()
     
-    public var downloadImage: ((String) -> ())?
+    public var downloadImageClouser: ((String) -> ())?
     
     private func updateUI(){
         guard let viewModel else {return}
-//        imageView.loadImage(from: URL(string: serverURL + viewModel.url)!, withOptions: [.resize(contentView.bounds.size), .cache(.memory)])
+        if viewModel.isDownloaded {
+            print("\(viewModel.id)" + " \(viewModel.isDownloaded)")
+            var image: UIImage?
+            DispatchQueue.global().async {
+                //image = self.imageView.getCachedImage(for: URL(string: viewModel.url)!, options: [.cache(.disk)])
+            }
+            DispatchQueue.main.async {
+                //self.imageView.image = image
+                //self.contentView.addSubview(self.imageTest)
+                // НЕ НАХОДИТ ЭЛЕМЕНТ В КЭШЕ ВОЗМОЖНО по причине релоада DownloadableImageView
+            }
+            imageView.onDownloadProgress = { progress in
+                print("Download progress: \(progress)%")
+            }
+        }
     }
+    
+    private lazy var imageTest: UIImageView = {
+            let imageView = UIImageView()
+            imageView.contentMode = .scaleAspectFill
+            imageView.clipsToBounds = true
+            imageView.backgroundColor = .clear
+            imageView.translatesAutoresizingMaskIntoConstraints = false
+            return imageView
+        }()
     
     override func prepareForReuse() {
         imageView.image = nil
         imageView.cancelDownload()
     }
-    
-    static let identifier = "ImageCell"
-    //private var cancellables: Set<AnyCancellable> = []
     
     private lazy var downloadButton: UIButton = {
         let button = UIButton()
@@ -46,7 +69,7 @@ class ImageCell: UICollectionViewCell {
     
     @objc func downloadImage(_ sender: UIButton) {
         guard let viewModel = self.viewModel else {return}
-        downloadImage?(viewModel.url)
+        downloadImageClouser?(viewModel.url)
         print(viewModel.name)
     }
     
@@ -68,6 +91,30 @@ class ImageCell: UICollectionViewCell {
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupViews()
+        
+        imageView.imageLoadedPublisher
+            .receive(on: DispatchQueue.main) // Обрабатываем события на главном потоке
+            .sink(
+                receiveCompletion: { completion in
+                    switch completion {
+                    case .finished:
+                        print("Image loading completed.")
+                    case .failure(let error):
+                        print("Failed to load image: \(error)")
+    
+                    }
+                },
+                receiveValue: { image in
+                    print("Image downloaded successfully!")
+                    self.imageView.image = image
+                    guard let viewModel = self.viewModel else {return}
+                    viewModel.isDownloadedEvent?(viewModel.id)
+                }
+                
+            )
+            .store(in: &cancellables)
+
+        
     }
     
     required init?(coder: NSCoder) {

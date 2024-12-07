@@ -6,8 +6,12 @@
 //
 
 import UIKit
+import Combine
 
 class DownloadableImageView: UIImageView, Downloadable {
+    
+    private var totalDataCount: Int64 = 0
+    private var receivedDataCount: Int64 = 0
     
     private var currentDownloadTask: URLSessionDataTask?
     
@@ -17,10 +21,14 @@ class DownloadableImageView: UIImageView, Downloadable {
         return paths[0]
     }()
     
+    public var onDownloadProgress: ((Double) -> Void)?
+    
+    public var imageLoadedPublisher = PassthroughSubject<UIImage, Error>()
+    
     public func loadImage(from url: URL, withOptions: [DownloadOptions]) {
         
         currentDownloadTask?.cancel()
-        
+
         DispatchQueue.global().async {
 
             if let cachedImage = self.getCachedImage(for: url, options: withOptions) {
@@ -29,7 +37,7 @@ class DownloadableImageView: UIImageView, Downloadable {
                 }
                 return
             }
-            let session = URLSession(configuration: .default)
+            let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
             self.currentDownloadTask = session.dataTask(with: url) { [weak self] data, response, error in
                 guard let self = self, let data = data, error == nil,
                       var image = UIImage(data: data) else {
@@ -39,14 +47,15 @@ class DownloadableImageView: UIImageView, Downloadable {
                 image = self.performOption(image, option: option, for: url)
             }
             DispatchQueue.main.async {
-                    self.image = image
-                }
+                //self.image = image
+                self.imageLoadedPublisher.send(image)
+            }
         }
             self.currentDownloadTask?.resume()
         }
     }
     
-    private func getCachedImage(for url: URL, options: [DownloadOptions]) -> UIImage?{
+    public func getCachedImage(for url: URL, options: [DownloadOptions]) -> UIImage?{
         for option in options {
             switch option {
             case .cache(let from):
@@ -99,6 +108,36 @@ class DownloadableImageView: UIImageView, Downloadable {
         currentDownloadTask = nil
     }
 }
+
+extension DownloadableImageView: URLSessionDataDelegate {
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        print("responce")
+        totalDataCount = response.expectedContentLength // Общий размер данных
+        receivedDataCount = 0                           // Сбрасываем полученный объем
+        completionHandler(.allow)
+    }
+    
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        print("data")
+        receivedDataCount += Int64(data.count)          // Увеличиваем полученный объем
+        
+        if totalDataCount > 0 {
+            let progress = Double(receivedDataCount) / Double(totalDataCount)
+            DispatchQueue.main.async {
+                self.onDownloadProgress?(progress * 100) // Прогресс в процентах
+            }
+        }
+    }
+    
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        if let error = error {
+            print("Download failed with error: \(error)")
+        } else {
+            print("Download completed")
+        }
+    }
+}
+
 
 enum DownloadOptions {
     enum From {
